@@ -1,3 +1,4 @@
+#include <vector>
 #ifndef PROCESSOR_H
 #define PROCESSOR_H
 
@@ -7,6 +8,7 @@ class Processor {
 
   // TODO: Declare any necessary private members
  private:
+    std::vector<int> Pids();
 };
 
 #endif
