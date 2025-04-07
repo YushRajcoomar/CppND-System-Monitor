@@ -8,7 +8,6 @@
 #include "linux_parser.h"
 #include "format.h"
 
-
 using std::stof;
 using std::stol;
 using std::string;

@@ -1,3 +1,4 @@
+#include <vector>
 #include "processor.h"
 #include "linux_parser.h"
 #include "unistd.h"
