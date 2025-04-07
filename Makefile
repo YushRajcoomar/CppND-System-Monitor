@@ -16,7 +16,7 @@ build:
 debug:
 	mkdir -p build
 	cd build && \
-	cmake -DCMAKE_BUILD_TYPE=debug .. && \
+	cmake -DCMAKE_BUILD_TYPE=Debug .. && \
 	make
 
 .PHONY: clean
