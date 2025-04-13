@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
+#include <unordered_set>
 #include "linux_parser.h"
 #include "format.h"
 
@@ -13,7 +13,7 @@ using std::stol;
 using std::string;
 using std::to_string;
 using std::vector;
-
+using std::unordered_set;
 // DONE: An example of how to read data from the filesystem
 string LinuxParser::OperatingSystem() {
   string line;
@@ -53,6 +53,7 @@ string LinuxParser::Kernel() {
 // BONUS: Update this to use std::filesystem
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
+  unordered_set<int> pid_hashmap;
   DIR* directory = opendir(kProcDirectory.c_str());
   struct dirent* file;
   while ((file = readdir(directory)) != nullptr) {
@@ -63,9 +64,10 @@ vector<int> LinuxParser::Pids() {
       if (std::all_of(filename.begin(), filename.end(), isdigit)) {
         int pid = stoi(filename);
         pids.push_back(pid);
+        }
       }
     }
-  }
+  
   closedir(directory);
   return pids;
 }
@@ -96,12 +98,12 @@ float LinuxParser::MemoryUtilization() {
 long LinuxParser::UpTime() {
   string value, token;
   long uptime_in_seconds;
-  std::ifstream filestream(kProcDirectory + kMeminfoFilename);
+  std::ifstream filestream(kProcDirectory + kUptimeFilename);
     if (filestream.is_open()) {
-      filestream >> token >> value;
+      filestream >> token;
       filestream.close();
   }
-  uptime_in_seconds = std::stol(value);
+  uptime_in_seconds = std::stol(token);
   return uptime_in_seconds;
 }
 // TODO: Read and return the number of jiffies for the system
@@ -204,59 +206,21 @@ string LinuxParser::Command(int pid) {
 // REMOVE: [[maybe_unused]] once you define the function
 long LinuxParser::ActiveJiffies(int pid) { 
   vector<string> proc_store;
-  string line,val;
+  string line,skip;
+  string u_time,s_time, c_u_time, c_k_time;
 
-  // const int HERTZ = sysconf(_SC_CLK_TCK);
-  // const long sys_uptime = UpTime();
   std::ifstream filestream(kProcDirectory + to_string(pid) + kStatFilename);
-  while(std::getline(filestream,line)){
-    std::stringstream stream(line);
-    while (stream >> line){
-      proc_store.push_back(line);
+  if (filestream.is_open()) {
+    getline(filestream, line);
+    std::istringstream linestream(line); 
+    for(int i = 1; i < 14; ++i) {
+      linestream >> skip;
     }
+    linestream >> u_time >> s_time; //>> c_u_time >> c_k_time;
   }
-
-  string u_time = proc_store[13];
-  string k_time = proc_store[14];
-  string c_u_time = proc_store[15];
-  string c_k_time = proc_store[16];
-
-  string start_time = proc_store[21];
-
-  long total_time = std::stol(u_time) + std::stol(k_time) +std::stol(c_u_time) + std::stol(c_k_time);
-  // long seconds = sys_uptime - (std::stol(start_time)/HERTZ); 
-  // long cpu_use = ((total_time / HERTZ) /seconds);
+  long total_time  = std::atol(u_time.c_str()) + std::atol(s_time.c_str());;
   return total_time;
 }
-
-// TODO: Read and return the cpu util used by a process
-string LinuxParser::Cpu(int pid) {
-  vector<string> proc_store;
-  string line,val;
-
-  const int HERTZ = sysconf(_SC_CLK_TCK);
-  const long sys_uptime = UpTime();
-  std::ifstream filestream(kProcDirectory + to_string(pid) + kStatFilename);
-  while(std::getline(filestream,line)){
-    std::stringstream stream(line);
-    while (stream >> line){
-      proc_store.push_back(line);
-    }
-  }
-
-  string u_time = proc_store[13];
-  string k_time = proc_store[14];
-  string c_u_time = proc_store[15];
-  string c_k_time = proc_store[16];
-
-  string start_time = proc_store[21];
-
-  int total_time = std::stoi(u_time) + std::stoi(k_time) +std::stoi(c_u_time) + std::stoi(c_k_time);
-  long seconds = sys_uptime - (std::stol(start_time)/HERTZ); 
-  long cpu_use = ((total_time / HERTZ) /seconds);
-  return to_string(cpu_use);
-}
-
 
 // TODO: Read and return the memory used by a process
 string LinuxParser::Ram(int pid) {
@@ -272,7 +236,9 @@ string LinuxParser::Ram(int pid) {
         break;
       }
     }
+
   }
+
   return ans;
 }
 
@@ -318,18 +284,19 @@ string LinuxParser::User(int pid) {
 long LinuxParser::UpTime(int pid) {
   vector<string> proc_store;
   string line,val;
+  long start_time = 0;
 
-  const int HERTZ = sysconf(_SC_CLK_TCK);
-  const long sys_uptime = UpTime();
+  const long HERTZ = sysconf(_SC_CLK_TCK);  
   std::ifstream filestream(kProcDirectory + to_string(pid) + kStatFilename);
-  while(std::getline(filestream,line)){
+  if (filestream.is_open()){
+    getline(filestream, line);
     std::stringstream stream(line);
-    while (stream >> line){
-      proc_store.push_back(line);
-    }
+  for (int i = 0; i < 21 ; i++){
+    stream >> val;
   }
-  string start_time = proc_store[21];
-  long seconds = sys_uptime - (std::stol(start_time)/HERTZ); 
-  // string pid_uptime = Format::ElapsedTime(seconds);
+  stream >> start_time;
+}
+  long seconds = start_time/HERTZ; 
+
   return seconds;
 }

@@ -20,16 +20,6 @@ Process::Process(int pid){
     ram_ = LinuxParser::Ram(pid);
     uptime_ = LinuxParser::UpTime(pid);
 
-    std::string cpu_s = LinuxParser::Cpu(pid);
-    cpu_ = std::stof(cpu_s);
-    long seconds = LinuxParser::UpTime() - uptime_;
-    long totaltime = LinuxParser::ActiveJiffies(pid);
-    try {
-        m_utilization = float(totaltime) / float(seconds);
-
-    } catch (...) {
-        m_utilization = 0;
-    }
 }
 
 // TODO: Return this process's ID
@@ -39,8 +29,13 @@ int Process::Pid() {
 
 // TODO: Return this process's CPU utilization
 float Process::CpuUtilization() {
+    const int HERTZ = sysconf(_SC_CLK_TCK);
+    float total_time = LinuxParser::UpTime();
+    float proc_time = LinuxParser::ActiveJiffies(pid_);
+    long seconds = total_time - (proc_time/HERTZ);
+    cpu_ = ((proc_time / HERTZ) /seconds) * 100;
 
-    return m_utilization;
+    return cpu_;
 }
 
 // TODO: Return the command that generated this process
@@ -50,7 +45,9 @@ string Process::Command() {
 
 // TODO: Return this process's memory utilization
 string Process::Ram() {
-    return ram_;
+    long ram_kb = std::atol(ram_.c_str());
+    long ram_mb = ram_kb/1024;
+    return to_string(ram_mb);
 }
 
 // TODO: Return the user (name) that generated this process
@@ -64,12 +61,10 @@ long int Process::UpTime() {
   }
 
 // TODO: Overload the "less than" comparison operator for Process objects
-// REMOVE: [[maybe_unused]] once you define the function
 bool Process::operator<(Process const& a) const {
-    if (a.pid_ < Process::pid_){
-        return true;
-    }
-    else {
-        return false;
-    }
+    return this->cpu_ < a.cpu_;
+}
+
+bool Process::operator>(Process const& a) const {
+    return this->cpu_ > a.cpu_;
 }

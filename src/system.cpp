@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <cstddef>
 #include <set>
+#include <unordered_set>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -10,10 +11,14 @@
 #include "system.h"
 #include "linux_parser.h"
 
-using std::set;
+
+using std::unordered_set;
 using std::size_t;
 using std::string;
 using std::vector;
+using std::sort;
+
+
 /*You need to complete the mentioned TODOs in order to satisfy the rubric criteria "The student will be able to extract and display basic data about the system."
 
 You need to properly format the uptime. Refer to the comments mentioned in format. cpp for formatting the uptime.*/
@@ -26,11 +31,11 @@ Processor& System::Cpu() {
 // TODO: Return a container composed of the system's processes
 vector<Process>& System::Processes() {
     vector<int> pid_vec = LinuxParser::Pids();
-
+    processes_.clear();
     for (auto i : pid_vec) {
         processes_.push_back(Process(i));
     }
-
+    sort(processes_.rbegin(),processes_.rend());
     return processes_;
 }
 
